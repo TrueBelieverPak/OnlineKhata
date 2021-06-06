@@ -293,6 +293,7 @@ generatePdfReport(context, String partName, List<DocumentSnapshot> list,
       // String base64Image = base64Encode(bytes);
 
 
+
       // FlutterShareMe().shareToWhatsApp(base64Image:"data:image/jpeg;base64,"+ base64Image, msg: "Share Ledger Report");
       Share.shareFiles(['${createReportDir.path}/Report_$formattedDate.pdf'], text: '' );
 
