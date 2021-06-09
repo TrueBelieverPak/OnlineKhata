@@ -3,6 +3,9 @@ import 'dart:io';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:modal_progress_hud/modal_progress_hud.dart';
+import 'package:onlinekhata/mongo_db/db_connection.dart';
+import 'package:onlinekhata/sqflite_database/DbProvider.dart';
+import 'package:onlinekhata/sqflite_database/model/PartyModel.dart';
 import 'package:onlinekhata/ui/ledger_detail.dart';
 import 'package:onlinekhata/utils/constants.dart';
 
@@ -15,35 +18,50 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   List<DocumentSnapshot> _partiesList = [];
-  List<DocumentSnapshot> _searchResult = [];
 
   bool loading = true;
 
-  int documentLimit = 10; // documents to be fetched per request
+  int documentLimit = 30; // documents to be fetched per request
   DocumentSnapshot _lastDocument;
   bool _gettingMoreParties = false;
   bool _morePartiesAvailable = true;
 
-  ScrollController scrollController = ScrollController();
+  // ScrollController scrollController = ScrollController();
   TextEditingController searchController = TextEditingController();
+  DbProvider dbProvider = DbProvider();
+  List<PartyModel> partyModelList = List();
 
   @override
   void initState() {
-    getParties();
-    scrollController = ScrollController();
-    scrollController.addListener(_scrollListener);
+    // getLocalDb().then((value) {
+    //   if (value != null && value == true) {
+    //     getDateFromLocalDB();
+    //   } else {
+    //     getParties();
+    //   }
+    // });
+
+
+    MongoDBConnection().getConnection().then((value) {
+
+      MongoDBConnection().getPartiesFromMongoServer();
+    });
+
+
+    // scrollController = ScrollController();
+    // scrollController.addListener(_scrollListener);
 
     super.initState();
   }
 
-  _scrollListener() {
-    double maxScroll = scrollController.position.maxScrollExtent;
-    double currentScroll = scrollController.position.pixels;
-    double delta = MediaQuery.of(context).size.height * 0.25;
-    if (maxScroll - currentScroll <= delta) {
-      __getMoreParties();
-    }
-  }
+  // _scrollListener() {
+  //   double maxScroll = scrollController.position.maxScrollExtent;
+  //   double currentScroll = scrollController.position.pixels;
+  //   double delta = MediaQuery.of(context).size.height * 0.25;
+  //   if (maxScroll - currentScroll <= delta) {
+  //     __getMoreParties();
+  //   }
+  // }
 
   @override
   Widget build(BuildContext context) {
@@ -105,14 +123,14 @@ class _HomeScreenState extends State<HomeScreen> {
                         autofocus: false,
                         textInputAction: TextInputAction.done,
                         onSubmitted: (v) {
-                           if (v.length == 0) {
-                             getParties();
-                           }
+                          if (v.length == 0) {
+                            // getParties();
+                          }
                         },
                         onChanged: (v) {
-                           if (v.length == 0) {
-                             getParties();
-                           }
+                          if (v.length == 0) {
+                            // getParties();
+                          }
                         },
                         decoration: InputDecoration(
                             labelStyle: new TextStyle(color: Colors.grey),
@@ -132,8 +150,36 @@ class _HomeScreenState extends State<HomeScreen> {
                     GestureDetector(
                       onTap: () {
                         if (searchController.text.toString().length > 0) {
-                          onSearchTextChanged(searchController.text.toString());
+                          // onSearchTextChanged(searchController.text.toString());
+                          setState(() {
+                            loading = true;
+                          });
+                          dbProvider
+                              .fetchPartyByPartName(searchController.text
+                                  .toLowerCase()
+                                  .toString())
+                              .then((value) {
+                            partyModelList = value;
 
+                            setState(() {
+                              partyModelList;
+                              loading = false;
+                            });
+                          });
+                        } else {
+                          setState(() {
+                            loading = true;
+                          });
+                          dbProvider
+                              .fetchParties()
+                              .then((value) {
+                            partyModelList = value;
+
+                            setState(() {
+                              partyModelList;
+                              loading = false;
+                            });
+                          });
                         }
                       },
                       child: Icon(
@@ -145,85 +191,42 @@ class _HomeScreenState extends State<HomeScreen> {
                   ],
                 ),
                 Expanded(
-                  child:    loading == true
-                      ? Container()
-                      : _partiesList == null
-                          ? Center(
-                              child: Text('No record found.'),
-                            )
-                          : _partiesList.length == 0
-                              ? Center(
-                                  child: Text('No record found.'),
-                                )
-
-                      : _partiesList.length != 0 && _searchResult.length==0 ?
-                  new ListView.builder(
-                    controller: scrollController,
-                    itemCount: _partiesList.length,
-                    scrollDirection: Axis.vertical,
-                    shrinkWrap: true,
-                    itemBuilder:
-                        (BuildContext context, int index) {
-                      return new InkWell(
-                        onTap: () {
-                          Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                  builder: (context) =>
-                                      LedgerDetailScreen(
-                                        ID: _partiesList[index]
-                                        ['Id'],
-                                        partName:
-                                        _partiesList[index]
-                                        ['PartyName'],
-                                      )));
-                        },
-                        child: new PartiesItem(
-                            _partiesList[index], index),
-                      );
-                    },
-                  ):
-
-                  _searchResult == null
-                      ? Center(
-                    child: Text('No record found.'),
-                  )
-                      : _searchResult.length == 0
-                      ? Center(
-                    child: Text('No record found.'),
-                  ):
-                  ListView.builder(
-                    controller: scrollController,
-                    itemCount: _searchResult.length,
-                    scrollDirection: Axis.vertical,
-                    shrinkWrap: true,
-                    itemBuilder:
-                        (BuildContext context, int index) {
-                      return new InkWell(
-                        onTap: () {
-                          Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                  builder: (context) =>
-                                      LedgerDetailScreen(
-                                        ID: _searchResult[index]
-                                        ['Id'],
-                                        partName:
-                                        _searchResult[index]
-                                        ['PartyName'],
-                                      )));
-                        },
-                        child: new PartiesItem(
-                            _searchResult[index], index),
-                      );
-                    },
-                  )
-
-
-
-
-                ),
-
+                    child: loading == true
+                        ? Container()
+                        : partyModelList == null
+                            ? Center(
+                                child: Text('No record found.'),
+                              )
+                            : partyModelList.length == 0
+                                ? Center(
+                                    child: Text('No record found.'),
+                                  )
+                                : new ListView.builder(
+                                    //      controller: scrollController,
+                                    itemCount: partyModelList.length,
+                                    scrollDirection: Axis.vertical,
+                                    shrinkWrap: true,
+                                    itemBuilder:
+                                        (BuildContext context, int index) {
+                                      return new InkWell(
+                                        onTap: () {
+                                          Navigator.push(
+                                              context,
+                                              MaterialPageRoute(
+                                                  builder: (context) =>
+                                                      LedgerDetailScreen(
+                                                        ID: int.parse(partyModelList[index].partyID),
+                                                        partName:
+                                                            partyModelList[
+                                                                    index]
+                                                                .partyName,
+                                                      )));
+                                        },
+                                        child: new PartiesItem(
+                                            partyModelList[index], index),
+                                      );
+                                    },
+                                  )),
               ],
             ),
           ),
@@ -247,23 +250,106 @@ class _HomeScreenState extends State<HomeScreen> {
   //   setState(() {});
   // }
 
-  onSearchTextChanged(String text) async {
+  // onSearchTextChanged(String text) async {
+  //   try {
+  //     final result = await InternetAddress.lookup('google.com');
+  //     if (result.isNotEmpty && result[0].rawAddress.isNotEmpty) {
+  //       setState(() {
+  //         loading = true;
+  //       });
+  //       setState(() {
+  //         loading = false;
+  //         _searchResult = _partiesList
+  //             .where((s) => s.data['PartyName']
+  //                 .toString()
+  //                 .toLowerCase()
+  //                 .contains(text.toLowerCase()))
+  //             .toList();
+  //         int i = 0;
+  //       });
+  //     }
+  //   } on SocketException catch (_) {
+  //     setState(() {
+  //       loading = false;
+  //     });
+  //     showDialog(
+  //         context: context,
+  //         barrierDismissible: false,
+  //         builder: (BuildContext context) {
+  //           return AlertDialog(
+  //             title: new Text("No Network Connection"),
+  //             content: new Text("Please connect to an Internet connection"),
+  //             actions: <Widget>[
+  //               new FlatButton(
+  //                 child: new Text('OK'),
+  //                 onPressed: () {
+  //                   Navigator.pop(context);
+  //                 },
+  //               ),
+  //             ],
+  //           );
+  //         });
+  //   }
+  // }
+
+  getParties() async {
     try {
       final result = await InternetAddress.lookup('google.com');
       if (result.isNotEmpty && result[0].rawAddress.isNotEmpty) {
         setState(() {
           loading = true;
         });
+
+        Query q = databaseReference
+            .collection('Party')
+            //  .where("PartyName",isEqualTo: "AA FABRICS")
+            .orderBy('PartyName')
+            .limit(documentLimit);
+
+        QuerySnapshot querySnapshot = await q.getDocuments();
+
+        _partiesList = querySnapshot.documents;
+
+        for (int i = 0; i < _partiesList.length; i++) {
+          final partyModel = PartyModel(
+            partyID: _partiesList[i].data['Id'].toString(),
+            partyName: _partiesList[i].data['PartyName'].toString(),
+            debit: _partiesList[i].data['Debit'].toString(),
+            credit: _partiesList[i].data['Credit'].toString(),
+            total: _partiesList[i].data["Credit"] == null
+                ? 'RS ' + _partiesList[i].data["Debit"].toString()
+                : _partiesList[i].data["Debit"] == null
+                    ? 'RS ' + _partiesList[i].data["Credit"].toString()
+                    : 'RS ' + ((int.parse(_partiesList[i].data["Debit"].toString()) -
+                                    int.parse(_partiesList[i]
+                                        .data["Credit"]
+                                        .toString())) >
+                                0
+                            ? (int.parse(
+                                    _partiesList[i].data["Debit"].toString()) -
+                                int.parse(
+                                    _partiesList[i].data["Credit"].toString()))
+                            : (int.parse(_partiesList[i]
+                                        .data["Debit"]
+                                        .toString()) -
+                                    int.parse(_partiesList[i]
+                                        .data["Credit"]
+                                        .toString()))
+                                .abs()
+                                .toString()).toString(),
+          );
+          partyModelList.add(partyModel);
+          await dbProvider.addPartyItem(partyModel);
+        }
+
+        setLocalDb(true);
+
         setState(() {
+          partyModelList;
           loading = false;
-          _searchResult = _partiesList
-              .where((s) => s.data['PartyName']
-                  .toString()
-                  .toLowerCase()
-                  .contains(text.toLowerCase()))
-              .toList();
-          int i=0;
+          //   _searchResult = querySnapshot.documents;
         });
+        //  _lastDocument = querySnapshot.documents[querySnapshot.documents.length - 1];
       }
     } on SocketException catch (_) {
       setState(() {
@@ -289,55 +375,16 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
-  getParties() async {
-    try {
-      final result = await InternetAddress.lookup('google.com');
-      if (result.isNotEmpty && result[0].rawAddress.isNotEmpty) {
-        setState(() {
-          loading = true;
-        });
+  getDateFromLocalDB() async {
+    dbProvider.fetchParties().then((value) {
 
-        Query q = databaseReference
-            .collection('Party')
-            //  .where("PartyName",isEqualTo: "AA FABRICS")
-            .orderBy('PartyName')
-            .limit(documentLimit);
+      partyModelList = value;
 
-        QuerySnapshot querySnapshot = await q.getDocuments();
-
-        setState(() {
-          loading = false;
-         _searchResult.clear();
-          _partiesList = querySnapshot.documents;
-       //   _searchResult = querySnapshot.documents;
-
-        });
-
-        _lastDocument =
-            querySnapshot.documents[querySnapshot.documents.length - 1];
-      }
-    } on SocketException catch (_) {
       setState(() {
+        partyModelList;
         loading = false;
       });
-      showDialog(
-          context: context,
-          barrierDismissible: false,
-          builder: (BuildContext context) {
-            return AlertDialog(
-              title: new Text("No Network Connection"),
-              content: new Text("Please connect to an Internet connection"),
-              actions: <Widget>[
-                new FlatButton(
-                  child: new Text('OK'),
-                  onPressed: () {
-                    Navigator.pop(context);
-                  },
-                ),
-              ],
-            );
-          });
-    }
+    });
   }
 
   __getMoreParties() async {
@@ -393,7 +440,7 @@ class _HomeScreenState extends State<HomeScreen> {
 }
 
 class PartiesItem extends StatelessWidget {
-  final DocumentSnapshot _item;
+  final PartyModel _item;
   final int index;
 
   //int grossTotal = 0;
@@ -402,29 +449,6 @@ class PartiesItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // if (_item.data["Debit"] == null) {
-    //   grossTotal = 0 - _item.data["Credit"];
-    // } else {
-    //   grossTotal = _item.data["Debit"] - _item.data["Credit"];
-    // }
-    //
-    // if (_item.data["Credit"] == null) {
-    //   grossTotal = _item.data["Debit"] - 0;
-    // } else {
-    //   grossTotal = _item.data["Debit"] - _item.data["Debit"];
-    // }
-
-    // grossTotal = 0;
-    //
-    // if (_item.data["Debit"] == null || _item.data["Credit"] == null) {
-    //   if (_item.data["Credit"] == null) {
-    //     grossTotal = _item.data["Debit"];
-    //   } else if (_item.data["Debit"] == null) {
-    //     grossTotal = _item.data["Credit"];
-    //   }
-    // } else {
-    //   grossTotal = _item.data["Debit"] - _item.data["Debit"];
-    // }
     return new Container(
       color: Colors.white,
       height: 67,
@@ -438,7 +462,7 @@ class PartiesItem extends StatelessWidget {
           Container(
               margin: EdgeInsets.fromLTRB(2.0, 2.0, 13.0, 2.0),
               child: Row(
-               mainAxisAlignment: MainAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.start,
                 children: <Widget>[
                   // ClipRRect(
                   //   borderRadius: BorderRadius.circular(30.0),
@@ -451,17 +475,16 @@ class PartiesItem extends StatelessWidget {
                   // ),
                   Expanded(
                     child: Container(
-
                       margin: EdgeInsets.fromLTRB(10.0, 0.0, 0.0, 0.0),
                       child: Column(
-                       crossAxisAlignment: CrossAxisAlignment.start,
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: <Widget>[
-                          isKeyNotNull(_item.data["PartyName"])
+                          isKeyNotNull(_item.partyName)
                               ? Container(
                                   margin:
                                       EdgeInsets.fromLTRB(0.0, 0.0, 0.0, 0.0),
                                   child: Text(
-                                    _item.data["PartyName"],
+                                    _item.partyName,
                                     maxLines: 1,
                                     softWrap: true,
                                     overflow: TextOverflow.ellipsis,
@@ -473,9 +496,8 @@ class PartiesItem extends StatelessWidget {
                                   ),
                                 )
                               : Container(),
-
                           Row(
-                              mainAxisAlignment: MainAxisAlignment.start,
+                            mainAxisAlignment: MainAxisAlignment.start,
                             children: [
                               Container(
                                 margin: EdgeInsets.fromLTRB(0.0, 3.0, 3.0, 0.0),
@@ -492,31 +514,29 @@ class PartiesItem extends StatelessWidget {
                                   ),
                                 ),
                               ),
-
-                              isKeyNotNull(_item.data["Debit"].toString())
+                              isKeyNotNull(_item.debit.toString())
                                   ? Container(
-                                margin: EdgeInsets.fromLTRB(7.0, 3.0, 3.0, 0.0),
-                                child: Text(
-                                  'RS ' + _item.data["Debit"].toString(),
-                                  textAlign: TextAlign.right,
-                                  maxLines: 1,
-                                  softWrap: true,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: TextStyle(
-                                    color: Colors.red,
-                                    fontSize: 12.5,
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
-                              )
+                                      margin: EdgeInsets.fromLTRB(
+                                          7.0, 3.0, 3.0, 0.0),
+                                      child: Text(
+                                        'RS ' + _item.debit.toString(),
+                                        textAlign: TextAlign.right,
+                                        maxLines: 1,
+                                        softWrap: true,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: TextStyle(
+                                          color: Colors.red,
+                                          fontSize: 12.5,
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                      ),
+                                    )
                                   : Container(),
-
                             ],
                           ),
                           Row(
                             mainAxisAlignment: MainAxisAlignment.start,
                             children: [
-
                               Container(
                                 margin: EdgeInsets.fromLTRB(0.0, 3.0, 3.0, 0.0),
                                 child: Text(
@@ -532,24 +552,24 @@ class PartiesItem extends StatelessWidget {
                                   ),
                                 ),
                               ),
-                              isKeyNotNull(_item.data["Credit"].toString())
+                              isKeyNotNull(_item.credit.toString())
                                   ? Container(
-                                margin: EdgeInsets.fromLTRB(3.0, 3.0, 3.0, 0.0),
-                                child: Text(
-                                  'RS ' + _item.data["Credit"].toString(),
-                                  textAlign: TextAlign.right,
-                                  maxLines: 1,
-                                  softWrap: true,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: TextStyle(
-                                    color: Colors.green,
-                                    fontSize: 12.5,
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
-                              )
+                                      margin: EdgeInsets.fromLTRB(
+                                          3.0, 3.0, 3.0, 0.0),
+                                      child: Text(
+                                        'RS ' + _item.credit.toString(),
+                                        textAlign: TextAlign.right,
+                                        maxLines: 1,
+                                        softWrap: true,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: TextStyle(
+                                          color: Colors.green,
+                                          fontSize: 12.5,
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                      ),
+                                    )
                                   : Container(),
-
                             ],
                           ),
                         ],
@@ -560,11 +580,11 @@ class PartiesItem extends StatelessWidget {
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.end,
                     children: [
-                      _item.data["Credit"] == null
+                      _item.credit == null
                           ? Container(
                               margin: EdgeInsets.fromLTRB(3.0, 0.0, 3.0, 0.0),
                               child: Text(
-                                'RS ' + _item.data["Debit"].toString(),
+                                'RS ' + _item.debit.toString(),
                                 textAlign: TextAlign.right,
                                 maxLines: 1,
                                 softWrap: true,
@@ -576,12 +596,12 @@ class PartiesItem extends StatelessWidget {
                                 ),
                               ),
                             )
-                          : _item.data["Debit"] == null
+                          : _item.debit == null
                               ? Container(
                                   margin:
                                       EdgeInsets.fromLTRB(3.0, 0.0, 3.0, 0.0),
                                   child: Text(
-                                    'RS ' + _item.data["Credit"].toString(),
+                                    'RS ' + _item.credit.toString(),
                                     textAlign: TextAlign.right,
                                     maxLines: 1,
                                     softWrap: true,
@@ -598,20 +618,18 @@ class PartiesItem extends StatelessWidget {
                                       EdgeInsets.fromLTRB(3.0, 0.0, 3.0, 0.0),
                                   child: Text(
                                     'RS ' +
-                                        ((int.parse(_item.data["Debit"].toString()) -
-                                                        int.parse(_item
-                                                            .data["Credit"]
+                                        ((int.parse(_item.debit.toString()) -
+                                                        int.parse(_item.credit
                                                             .toString())) >
                                                     0
-                                                ? (int.parse(_item.data["Debit"]
+                                                ? (int.parse(_item.debit
                                                         .toString()) -
-                                                    int.parse(_item
-                                                        .data["Credit"]
+                                                    int.parse(_item.credit
                                                         .toString()))
-                                                : (int.parse(_item.data["Debit"]
+                                                : (int.parse(_item.debit
                                                             .toString()) -
-                                                        int.parse(
-                                                            _item.data["Credit"].toString()))
+                                                        int.parse(_item.credit
+                                                            .toString()))
                                                     .abs()
                                                     .toString())
                                             .toString(),
@@ -620,10 +638,10 @@ class PartiesItem extends StatelessWidget {
                                     softWrap: true,
                                     overflow: TextOverflow.ellipsis,
                                     style: TextStyle(
-                                      color: (int.parse(_item.data["Debit"]
-                                                      .toString()) -
-                                                  int.parse(_item.data["Debit"]
-                                                      .toString())) >
+                                      color: (int.parse(
+                                                      _item.debit.toString()) -
+                                                  int.parse(
+                                                      _item.debit.toString())) >
                                               0
                                           ? Colors.green
                                           : Colors.red,

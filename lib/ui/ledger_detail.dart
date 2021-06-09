@@ -121,12 +121,12 @@ List<dynamic> dateEnd =["2021-05-25 19:02:51.000Z"];
                         ),
                       ),
 
-                      Container(
-                        width: 30,
-                        height: 30,
-                        margin: EdgeInsets.fromLTRB(5.0, 0, 0.0, 0.0),
-                        child: Image.asset("assets/ic_calendar.png")
-                      ),
+                      // Container(
+                      //   width: 30,
+                      //   height: 30,
+                      //   margin: EdgeInsets.fromLTRB(5.0, 0, 0.0, 0.0),
+                      //   child: Image.asset("assets/ic_calendar.png")
+                      // ),
                     ],
                   ),
                 ),
@@ -412,7 +412,7 @@ List<dynamic> dateEnd =["2021-05-25 19:02:51.000Z"];
                                   Container(
                                       margin: EdgeInsets.fromLTRB(5.0, 0, 0.0, 0.0),
                                       child: Text(
-                                        'View PDF',
+                                        'Downlaod PDF',
                                         style: TextStyle(color: Colors.blueAccent),
                                       )),
                                 ],
