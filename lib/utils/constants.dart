@@ -4,7 +4,6 @@ import 'package:intl/intl.dart';
 
 Firestore databaseReference = Firestore.instance;
 
-
 String getDateTimeFormat(String date) {
   final DateTime now = DateTime.parse(date);
   // final DateFormat formatter = DateFormat('dd MMM yyyy h:mm a');

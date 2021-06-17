@@ -19,7 +19,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   bool loading = true;
 
-  int documentLimit = 10; // documents to be fetched per request
+  int documentLimit = 10000; // documents to be fetched per request
   DocumentSnapshot _lastDocument;
   bool _gettingMoreParties = false;
   bool _morePartiesAvailable = true;
@@ -105,14 +105,14 @@ class _HomeScreenState extends State<HomeScreen> {
                         autofocus: false,
                         textInputAction: TextInputAction.done,
                         onSubmitted: (v) {
-                           if (v.length == 0) {
-                             getParties();
-                           }
+                          if (v.length == 0) {
+                            getParties();
+                          }
                         },
                         onChanged: (v) {
-                           if (v.length == 0) {
-                             getParties();
-                           }
+                          if (v.length == 0) {
+                            getParties();
+                          }
                         },
                         decoration: InputDecoration(
                             labelStyle: new TextStyle(color: Colors.grey),
@@ -131,9 +131,8 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                     GestureDetector(
                       onTap: () {
-                        if (searchController.text.toString().length > 0) {
+                        if (searchController.text.toString().length >= 0) {
                           onSearchTextChanged(searchController.text.toString());
-
                         }
                       },
                       child: Icon(
@@ -145,85 +144,83 @@ class _HomeScreenState extends State<HomeScreen> {
                   ],
                 ),
                 Expanded(
-                  child:    loading == true
-                      ? Container()
-                      : _partiesList == null
-                          ? Center(
-                              child: Text('No record found.'),
-                            )
-                          : _partiesList.length == 0
-                              ? Center(
-                                  child: Text('No record found.'),
-                                )
-
-                      : _partiesList.length != 0 && _searchResult.length==0 ?
-                  new ListView.builder(
-                    controller: scrollController,
-                    itemCount: _partiesList.length,
-                    scrollDirection: Axis.vertical,
-                    shrinkWrap: true,
-                    itemBuilder:
-                        (BuildContext context, int index) {
-                      return new InkWell(
-                        onTap: () {
-                          Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                  builder: (context) =>
-                                      LedgerDetailScreen(
-                                        ID: _partiesList[index]
-                                        ['Id'],
-                                        partName:
-                                        _partiesList[index]
-                                        ['PartyName'],
-                                      )));
-                        },
-                        child: new PartiesItem(
-                            _partiesList[index], index),
-                      );
-                    },
-                  ):
-
-                  _searchResult == null
-                      ? Center(
-                    child: Text('No record found.'),
-                  )
-                      : _searchResult.length == 0
-                      ? Center(
-                    child: Text('No record found.'),
-                  ):
-                  ListView.builder(
-                    controller: scrollController,
-                    itemCount: _searchResult.length,
-                    scrollDirection: Axis.vertical,
-                    shrinkWrap: true,
-                    itemBuilder:
-                        (BuildContext context, int index) {
-                      return new InkWell(
-                        onTap: () {
-                          Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                  builder: (context) =>
-                                      LedgerDetailScreen(
-                                        ID: _searchResult[index]
-                                        ['Id'],
-                                        partName:
-                                        _searchResult[index]
-                                        ['PartyName'],
-                                      )));
-                        },
-                        child: new PartiesItem(
-                            _searchResult[index], index),
-                      );
-                    },
-                  )
-
-
-
-
-                ),
-
+                    child: loading == true
+                        ? Container()
+                        : _partiesList == null
+                            ? Center(
+                                child: Text('No record found.'),
+                              )
+                            : _partiesList.length == 0
+                                ? Center(
+                                    child: Text('No record found.'),
+                                  )
+                                : _partiesList.length != 0 &&
+                                        _searchResult.length == 0
+                                    ? new ListView.builder(
+                                        controller: scrollController,
+                                        itemCount: _partiesList.length,
+                                        scrollDirection: Axis.vertical,
+                                        shrinkWrap: true,
+                                        itemBuilder:
+                                            (BuildContext context, int index) {
+                                          return new InkWell(
+                                            onTap: () {
+                                              Navigator.push(
+                                                  context,
+                                                  MaterialPageRoute(
+                                                      builder: (context) =>
+                                                          LedgerDetailScreen(
+                                                            ID: _partiesList[
+                                                                index]['Id'],
+                                                            partName:
+                                                                _partiesList[
+                                                                        index][
+                                                                    'PartyName'],
+                                                          )));
+                                            },
+                                            child: new PartiesItem(
+                                                _partiesList[index], index),
+                                          );
+                                        },
+                                      )
+                                    : _searchResult == null
+                                        ? Center(
+                                            child: Text('No record found.'),
+                                          )
+                                        : _searchResult.length == 0
+                                            ? Center(
+                                                child: Text('No record found.'),
+                                              )
+                                            : ListView.builder(
+                                                controller: scrollController,
+                                                itemCount: _searchResult.length,
+                                                scrollDirection: Axis.vertical,
+                                                shrinkWrap: true,
+                                                itemBuilder:
+                                                    (BuildContext context,
+                                                        int index) {
+                                                  return new InkWell(
+                                                    onTap: () {
+                                                      Navigator.push(
+                                                          context,
+                                                          MaterialPageRoute(
+                                                              builder: (context) =>
+                                                                  LedgerDetailScreen(
+                                                                    ID: _searchResult[
+                                                                            index]
+                                                                        ['Id'],
+                                                                    partName: _searchResult[
+                                                                            index]
+                                                                        [
+                                                                        'PartyName'],
+                                                                  )));
+                                                    },
+                                                    child: new PartiesItem(
+                                                        _searchResult[index],
+                                                        index),
+                                                  );
+                                                },
+                                              )),
               ],
             ),
           ),
@@ -262,7 +259,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   .toLowerCase()
                   .contains(text.toLowerCase()))
               .toList();
-          int i=0;
+          int i = 0;
         });
       }
     } on SocketException catch (_) {
@@ -307,14 +304,14 @@ class _HomeScreenState extends State<HomeScreen> {
 
         setState(() {
           loading = false;
-         _searchResult.clear();
+          _searchResult.clear();
           _partiesList = querySnapshot.documents;
-       //   _searchResult = querySnapshot.documents;
-
+          //   _searchResult = querySnapshot.documents;
         });
 
-        _lastDocument =
-            querySnapshot.documents[querySnapshot.documents.length - 1];
+        _lastDocument = querySnapshot.documents.length > 0
+            ? querySnapshot.documents[querySnapshot.documents.length - 1]
+            : 10000;
       }
     } on SocketException catch (_) {
       setState(() {
@@ -438,7 +435,7 @@ class PartiesItem extends StatelessWidget {
           Container(
               margin: EdgeInsets.fromLTRB(2.0, 2.0, 13.0, 2.0),
               child: Row(
-               mainAxisAlignment: MainAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.start,
                 children: <Widget>[
                   // ClipRRect(
                   //   borderRadius: BorderRadius.circular(30.0),
@@ -451,10 +448,9 @@ class PartiesItem extends StatelessWidget {
                   // ),
                   Expanded(
                     child: Container(
-
                       margin: EdgeInsets.fromLTRB(10.0, 0.0, 0.0, 0.0),
                       child: Column(
-                       crossAxisAlignment: CrossAxisAlignment.start,
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: <Widget>[
                           isKeyNotNull(_item.data["PartyName"])
                               ? Container(
@@ -473,9 +469,8 @@ class PartiesItem extends StatelessWidget {
                                   ),
                                 )
                               : Container(),
-
                           Row(
-                              mainAxisAlignment: MainAxisAlignment.start,
+                            mainAxisAlignment: MainAxisAlignment.start,
                             children: [
                               Container(
                                 margin: EdgeInsets.fromLTRB(0.0, 3.0, 3.0, 0.0),
@@ -492,31 +487,29 @@ class PartiesItem extends StatelessWidget {
                                   ),
                                 ),
                               ),
-
                               isKeyNotNull(_item.data["Debit"].toString())
                                   ? Container(
-                                margin: EdgeInsets.fromLTRB(7.0, 3.0, 3.0, 0.0),
-                                child: Text(
-                                  'RS ' + _item.data["Debit"].toString(),
-                                  textAlign: TextAlign.right,
-                                  maxLines: 1,
-                                  softWrap: true,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: TextStyle(
-                                    color: Colors.red,
-                                    fontSize: 12.5,
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
-                              )
+                                      margin: EdgeInsets.fromLTRB(
+                                          7.0, 3.0, 3.0, 0.0),
+                                      child: Text(
+                                        'RS ' + _item.data["Debit"].toString(),
+                                        textAlign: TextAlign.right,
+                                        maxLines: 1,
+                                        softWrap: true,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: TextStyle(
+                                          color: Colors.red,
+                                          fontSize: 12.5,
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                      ),
+                                    )
                                   : Container(),
-
                             ],
                           ),
                           Row(
                             mainAxisAlignment: MainAxisAlignment.start,
                             children: [
-
                               Container(
                                 margin: EdgeInsets.fromLTRB(0.0, 3.0, 3.0, 0.0),
                                 child: Text(
@@ -534,22 +527,22 @@ class PartiesItem extends StatelessWidget {
                               ),
                               isKeyNotNull(_item.data["Credit"].toString())
                                   ? Container(
-                                margin: EdgeInsets.fromLTRB(3.0, 3.0, 3.0, 0.0),
-                                child: Text(
-                                  'RS ' + _item.data["Credit"].toString(),
-                                  textAlign: TextAlign.right,
-                                  maxLines: 1,
-                                  softWrap: true,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: TextStyle(
-                                    color: Colors.green,
-                                    fontSize: 12.5,
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
-                              )
+                                      margin: EdgeInsets.fromLTRB(
+                                          3.0, 3.0, 3.0, 0.0),
+                                      child: Text(
+                                        'RS ' + _item.data["Credit"].toString(),
+                                        textAlign: TextAlign.right,
+                                        maxLines: 1,
+                                        softWrap: true,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: TextStyle(
+                                          color: Colors.green,
+                                          fontSize: 12.5,
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                      ),
+                                    )
                                   : Container(),
-
                             ],
                           ),
                         ],
